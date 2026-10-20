@@ -1,0 +1,475 @@
+name: Build APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Create project files
+        run: |
+          mkdir -p www
+          cat > www/index.html <<'RAFEEQ_EOF'
+          <!DOCTYPE html>
+          <html lang="ar" dir="rtl">
+          <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+          <meta name="theme-color" content="#0f766e">
+          <title>رفيق</title>
+          <style>
+          :root{--bg:#f4f6f3;--card:#fff;--ink:#1c2b27;--mut:#66776f;--pri:#0f766e;--pri2:#d9f0ec;--onpri:#fff;--line:#e2e8e5;--warn:#92400e;--warnbg:#fdf3e3;--bar:#e5ebe8}
+          @media (prefers-color-scheme:dark){:root{--bg:#101917;--card:#192623;--ink:#e6efec;--mut:#92a8a0;--pri:#2dd4bf;--pri2:#16413c;--onpri:#06231f;--line:#2a3b37;--warn:#fcd9a0;--warnbg:#3a2d17;--bar:#2a3b37}}
+          *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+          html,body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,"Noto Sans Arabic","Noto Naskh Arabic",Roboto,sans-serif;font-size:16px;line-height:1.7}
+          #main{padding:max(env(safe-area-inset-top,0px),var(--safe-area-inset-top,0px),10px) 14px calc(84px + max(env(safe-area-inset-bottom,0px),var(--safe-area-inset-bottom,0px)));max-width:640px;margin:0 auto}
+          h1{font-size:24px;margin:6px 0 0}
+          h2{font-size:17px;margin:18px 0 8px}
+          .sub{color:var(--mut);font-size:14px;margin-bottom:12px}
+          .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin:10px 0}
+          .card.msg{background:var(--pri2);border-color:transparent}
+          .card.warm{background:var(--warnbg);border-color:transparent;color:var(--warn)}
+          .lbl{font-size:12px;color:var(--mut);margin-bottom:4px;font-weight:600}
+          .card.msg .lbl{color:var(--pri)}
+          p{margin:6px 0}
+          .bar{height:10px;border-radius:99px;background:var(--bar);overflow:hidden;margin:8px 0}
+          .bar>i{display:block;height:100%;background:var(--pri);border-radius:99px;transition:width .3s}
+          .goal{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+          .goal:last-child{border-bottom:0}
+          .chk{flex:none;width:30px;height:30px;border-radius:50%;border:2px solid var(--pri);background:transparent;color:var(--onpri);font-size:16px;line-height:1;padding:0}
+          .chk.on{background:var(--pri)}
+          .goal .t{flex:1;word-break:break-word}
+          .goal.done .t{text-decoration:line-through;color:var(--mut)}
+          .ic{flex:none;border:0;background:transparent;font-size:18px;padding:6px;color:var(--mut)}
+          input,textarea,select{width:100%;font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+          textarea{min-height:84px;resize:vertical}
+          input[type=checkbox]{width:22px;height:22px;flex:none}
+          .row{display:flex;gap:8px;align-items:center}
+          .btn{font:inherit;font-weight:600;border:0;border-radius:12px;padding:10px 16px;background:var(--pri);color:var(--onpri)}
+          .btn.sec{background:var(--pri2);color:var(--pri)}
+          .btn.ghost{background:transparent;color:var(--mut);border:1px solid var(--line)}
+          .btn.danger{background:#b91c1c;color:#fff}
+          .btn.sm{padding:6px 12px;font-size:14px}
+          .btn[disabled]{opacity:.5}
+          .btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+          nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:var(--card);border-top:1px solid var(--line);padding-bottom:max(env(safe-area-inset-bottom,0px),var(--safe-area-inset-bottom,0px))}
+          nav button{flex:1;border:0;background:transparent;color:var(--mut);font:inherit;font-size:11px;padding:8px 0 6px;line-height:1.3}
+          nav button b{display:block;font-size:20px;font-weight:400}
+          nav button.on{color:var(--pri);font-weight:700}
+          .dots{display:flex;gap:6px;margin:8px 0}
+          .dots i{width:22px;height:22px;border-radius:50%;background:var(--bar)}
+          .dots i.o{background:var(--pri)}
+          .dots i.s{background:#d9a441}
+          .hname{font-weight:700;font-size:17px}
+          .stat{color:var(--pri);font-weight:700}
+          .chatbox{display:flex;flex-direction:column;height:calc(100dvh - 230px);min-height:260px}
+          #msgs{flex:1;overflow:auto;padding:4px 0}
+          .bub{max-width:88%;padding:9px 13px;border-radius:16px;margin:6px 0;white-space:pre-wrap;word-break:break-word}
+          .bub.u{background:var(--pri);color:var(--onpri);margin-inline-start:auto;border-end-start-radius:4px}
+          .bub.a{background:var(--card);border:1px solid var(--line);margin-inline-end:auto;border-end-end-radius:4px}
+          .bub.s{background:var(--warnbg);color:var(--warn);max-width:100%}
+          .ov{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center;z-index:50}
+          .mod{background:var(--card);width:100%;max-width:640px;border-radius:20px 20px 0 0;padding:16px 16px calc(16px + env(safe-area-inset-bottom,0px));max-height:88vh;overflow:auto}
+          .mod h3{margin:0 0 8px;font-size:18px}
+          #toast{position:fixed;left:50%;transform:translateX(-50%);bottom:96px;background:#1c2b27;color:#fff;padding:10px 16px;border-radius:12px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .25s;z-index:60;max-width:88%;text-align:center}
+          #toast.show{opacity:.96}
+          details{border-bottom:1px solid var(--line);padding:8px 0}
+          summary{font-weight:600}
+          .small{font-size:13px;color:var(--mut)}
+          .field{margin:10px 0}
+          .field label{display:block;font-size:14px;margin-bottom:4px}
+          .ltr{direction:ltr;text-align:left}
+          .sw{display:flex;align-items:center;gap:10px;margin:10px 0}
+          </style>
+          </head>
+          <body>
+          <main id="main"></main>
+          <nav id="nav"></nav>
+          <div id="toast"></div>
+          <script>
+          (function(){
+          'use strict';
+          var KEY='rafeeq_v1';
+          var $=function(s){return document.querySelector(s)};
+          var pad=function(n){return String(n).padStart(2,'0')};
+          var dk=function(d){return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())};
+          var parseK=function(k){var p=k.split('-').map(Number);return new Date(p[0],p[1]-1,p[2])};
+          var addDays=function(d,n){return new Date(d.getFullYear(),d.getMonth(),d.getDate()+n)};
+          var today=function(){return dk(new Date())};
+          var diffDays=function(a,b){return Math.round((parseK(b)-parseK(a))/864e5)};
+          var uid=function(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6)};
+          var esc=function(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})};
+          var fmtDate=function(k){try{return parseK(k).toLocaleDateString('ar-EG',{weekday:'long',day:'numeric',month:'long'})}catch(e){return k}};
+          var dayIndex=function(k){var d=parseK(k);return Math.floor(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())/864e5)};
+
+          /* ---------- الرسائل ---------- */
+          var MORN=[
+          'ابدأ يومك باسم الله وبخطوة صغيرة صادقة. قال ﷺ: «أحبّ الأعمال إلى الله أدومها وإن قلّ».',
+          '﴿أَلَا بِذِكْرِ اللَّهِ تَطْمَئِنُّ الْقُلُوبُ﴾ — خد دقيقة ذكر هادية دلوقتي وشوف قلبك.',
+          '﴿لَا يُكَلِّفُ اللَّهُ نَفْسًا إِلَّا وُسْعَهَا﴾ — متحمّلش نفسك فوق طاقتها النهارده. اختار أهداف تقدر عليها.',
+          '﴿فَإِنَّ مَعَ الْعُسْرِ يُسْرًا﴾ — اللي شايل همّه النهارده، مع الصبر ليه مخرج.',
+          '﴿وَمَن يَتَوَكَّلْ عَلَى اللَّهِ فَهُوَ حَسْبُهُ﴾ — خد بالأسباب وسيب النتيجة على ربنا.',
+          'قال ﷺ: «احرص على ما ينفعك واستعن بالله ولا تعجز». ابدأ بأهم هدف قبل أي حاجة تشتتك.',
+          'قال ﷺ: «كل ابن آدم خطّاء، وخير الخطّائين التوّابون». لو غلطت امبارح، النهارده بداية جديدة.',
+          '﴿إِنَّ اللَّهَ يُحِبُّ التَّوَّابِينَ﴾ — ربنا بيحب اللي يرجع له، فمتأخرش في الرجوع.',
+          '﴿وَإِنِّي لَغَفَّارٌ لِّمَن تَابَ وَآمَنَ وَعَمِلَ صَالِحًا ثُمَّ اهْتَدَىٰ﴾ — الطريق لسه مفتوح قدامك.',
+          'قال ﷺ: «وأتبِع السيئةَ الحسنةَ تمحُها». لو حصلت زلّة، اعمل حاجة طيبة صغيرة النهارده.',
+          '﴿وَالَّذِينَ جَاهَدُوا فِينَا لَنَهْدِيَنَّهُمْ سُبُلَنَا﴾ — كمّل في المجاهدة، والتوفيق من عند ربنا.',
+          '﴿وَقُل رَّبِّ زِدْنِي عِلْمًا﴾ — خصّص النهارده ١٠ دقايق لحاجة تتعلمها.',
+          'قال ﷺ: «المؤمن القوي خير وأحب إلى الله من المؤمن الضعيف، وفي كلٍّ خير». القوة بتبدأ بقرار صغير الصبح.',
+          '﴿فَاذْكُرُونِي أَذْكُرْكُمْ﴾ — دقيقة ذكر دلوقتي تفتح لك يومك.',
+          'النجاح مش إنك متغلطش أبدًا، النجاح إنك ترجع بسرعة. أول خطوة النهارده: اكتب هدف واحد.',
+          'قسّم يومك لقطع صغيرة. اللي بيخلّص حاجة صغيرة بيلاقي نفسه خلّص حاجات كتير.',
+          'النهارده مش لازم يكون مثالي، لازم يكون أحسن شوية من امبارح.',
+          'اسأل نفسك الصبح: إيه الحاجة الواحدة اللي لو عملتها النهارده يومي يبقى كويس؟',
+          '﴿رَبَّنَا آتِنَا فِي الدُّنْيَا حَسَنَةً وَفِي الْآخِرَةِ حَسَنَةً وَقِنَا عَذَابَ النَّارِ﴾ — ادعي بيها وانت ماشي.',
+          '﴿وَاسْتَعِينُوا بِالصَّبْرِ وَالصَّلَاةِ﴾ — لو اليوم تقيل، ابدأ بالصلاة في وقتها.',
+          'قال ﷺ: «إنما الأعمال بالنيات». جدّد نيتك الصبح: هعمل ده لوجه الله وعشان أبقى أحسن.',
+          'قال ﷺ: «ومن يتصبّر يُصبّره الله». وقّف نفسك لحظة قبل أي رد فعل النهارده.',
+          '﴿لَا تَقْنَطُوا مِن رَّحْمَةِ اللَّهِ﴾ — مهما كان ماضيك، رحمة ربنا أوسع.',
+          'ابعد عن اللي بيضعفك: لو في حاجة بتوقّعك، حط بينك وبينها مسافة من أول اليوم.',
+          'الشكر بيغيّر النهار: اكتب ٣ نعم ربنا أنعم بيها عليك النهارده.',
+          '﴿فَاصْبِرْ إِنَّ وَعْدَ اللَّهِ حَقٌّ﴾ — كمّل ومتستعجلش النتيجة.',
+          'جرّب أول ٣٠ دقيقة من يومك من غير موبايل لو تقدر؛ بتفرق في التركيز والمزاج.',
+          '﴿وَعَسَىٰ أَن تَكْرَهُوا شَيْئًا وَهُوَ خَيْرٌ لَّكُمْ﴾ — ممكن اللي شايفه تعب النهارده يطلع خير.'
+          ];
+          var MID=[
+          'وقفة سريعة: صلاتك في وقتها؟ ذكرك؟ إيه هدفك الجاي؟',
+          'خد نفس عميق، اشرب مية، وارجع لهدفك الجاي.',
+          'انت ماشي في الاتجاه اللي اخترته الصبح؟ صحّح المسار لو احتاج.',
+          'دقيقة استغفار دلوقتي. وبعدها كمّل يومك بقلب أخف.',
+          'افتح قايمة أهدافك وعلّم اللي خلّصته. أي إنجاز صغير يستاهل.',
+          'لو حاسس بضعف، افتكر: خطوة صغيرة أحسن من ما تقف.'
+          ];
+          var NIGHT=[
+          'وقت المراجعة: ٣ دقايق مع نفسك بهدوء. إيه اللي أنجزته النهارده؟',
+          'قبل ما تنام، حاسب نفسك برفق: إيه اللي نجحت فيه، وإيه اللي محتاج تصلحه؟',
+          'خد دقيقتين تكتب مراجعة اليوم، وسيب بكرة لبكرة.'
+          ];
+          var SLIP_COMFORT='الحمد لله إنك صارحت نفسك. الزلّة مش نهاية الطريق ومش بتمسح تعبك اللي فات.\n\nقال ﷺ: «كل ابن آدم خطّاء، وخير الخطّائين التوّابون».\n﴿إِنَّ اللَّهَ يُحِبُّ التَّوَّابِينَ﴾\n\nارجع لربنا دلوقتي بصدق، وبعدها نفهم إيه اللي حصل عشان نقفل الباب ده المرة الجاية.';
+          var SAFETY='لو بتفكر تأذي نفسك أو حاسس إنك مش قادر تكمل، أنا معاك، بس محتاج حد حقيقي جنبك كمان. كلّم حد قريب منك دلوقتي، أو اتصل بأقرب رقم طوارئ في بلدك (في مصر الإسعاف 123). مش لازم تواجه ده لوحدك.';
+          var CLOSE=[
+          'أحسنت إنك وقفت مع نفسك. الغلط بيتصلح، والتقدم بيتبني بالصبر. نام مرتاح البال وربنا يعينك بكرة.',
+          'مراجعة صادقة زي دي نص الطريق. اللي فات اتعلمنا منه، وبكرة صفحة جديدة بإذن الله.',
+          'مش لازم يكون يومك مثالي علشان يكون مفيد. الأهم إنك بتحاول وبترجع.'
+          ];
+
+          /* ---------- الحالة والتخزين ---------- */
+          var DEF={morning:'05:30',midday:'13:00',middayOn:false,night:'21:30',aiUrl:'',aiToken:'',aiConsent:false,shareSummary:false};
+          function merge(r){r=r||{};return {settings:Object.assign({},DEF,r.settings||{}),goals:r.goals||{},reviews:r.reviews||{},habits:r.habits||[],chat:r.chat||[]}}
+          function load(){try{return merge(JSON.parse(localStorage.getItem(KEY)))}catch(e){return merge(null)}}
+          var S=load();
+          function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){toast('تعذّر الحفظ على الجهاز')}}
+          var tab='today',busy=false,chatErr='',notifStatus='';
+          var draft={rev:null,revDate:'',chat:'',newGoal:''};
+          var TABS=[['today','اليوم','☀️'],['night','المساء','🌙'],['habits','المحاسبة','🛡️'],['chat','رفيق','💬'],['log','السجل','📖'],['set','الإعدادات','⚙️']];
+
+          function toast(t){var el=$('#toast');el.textContent=t;el.className='show';clearTimeout(toast.t);toast.t=setTimeout(function(){el.className=''},3200)}
+          function modal(html){var m=document.createElement('div');m.className='ov';m.innerHTML='<div class="mod">'+html+'</div>';document.body.appendChild(m);m.addEventListener('click',function(e){if(e.target===m)m.remove()});return m}
+          function askText(title,val,ok){var m=modal('<h3>'+esc(title)+'</h3><textarea id="mq">'+esc(val)+'</textarea><div class="btns"><button class="btn" id="mok">حفظ</button><button class="btn ghost" id="mno">إلغاء</button></div>');var t=m.querySelector('#mq');t.focus();m.querySelector('#mno').onclick=function(){m.remove()};m.querySelector('#mok').onclick=function(){var v=t.value.trim();m.remove();ok(v)}}
+          function confirmBox(msg,label,ok,danger){var m=modal('<p>'+esc(msg)+'</p><div class="btns"><button class="btn'+(danger?' danger':'')+'" id="mok">'+esc(label)+'</button><button class="btn ghost" id="mno">إلغاء</button></div>');m.querySelector('#mno').onclick=function(){m.remove()};m.querySelector('#mok').onclick=function(){m.remove();ok()}}
+
+          /* ---------- التنبيهات ---------- */
+          function LN(){var c=window.Capacitor;if(!c||!c.isNativePlatform||!c.isNativePlatform())return null;return c.Plugins&&c.Plugins.LocalNotifications||null}
+          function atTime(k,hhmm){var p=(hhmm||'00:00').split(':');var d=parseK(k);d.setHours(+p[0]||0,+p[1]||0,0,0);return d}
+          async function sched(askPerm){
+            var L=LN();if(!L){notifStatus='التنبيهات بتشتغل داخل التطبيق المثبّت على الموبايل فقط.';return false}
+            try{
+              var p=await L.checkPermissions();
+              if(p.display!=='granted'){
+                if(!askPerm){notifStatus='صلاحية الإشعارات غير مفعّلة.';return false}
+                p=await L.requestPermissions();
+                if(p.display!=='granted'){notifStatus='صلاحية الإشعارات مرفوضة. فعّلها من إعدادات الموبايل > التطبيقات > رفيق > الإشعارات.';return false}
+              }
+              try{await L.createChannel({id:'rafeeq',name:'تنبيهات رفيق',description:'تذكير الصباح والمراجعة',importance:4,visibility:1,vibration:true})}catch(e){}
+              var pend=await L.getPending();
+              if(pend.notifications&&pend.notifications.length){await L.cancel({notifications:pend.notifications.filter(function(n){return n.id!==9999}).map(function(n){return {id:n.id}})})}
+              var list=[],now=Date.now(),tk=today();
+              for(var i=0;i<30;i++){
+                var k=dk(addDays(new Date(),i)),di=dayIndex(k);
+                var add=function(id,title,body,when){if(when.getTime()>now+5000)list.push({id:id,title:title,body:body,largeBody:body,channelId:'rafeeq',schedule:{at:when,allowWhileIdle:true}})};
+                add(1000+i,'رسالة الصباح 🌿',MORN[di%MORN.length],atTime(k,S.settings.morning));
+                if(S.settings.middayOn)add(2000+i,'وقفة قصيرة',MID[di%MID.length],atTime(k,S.settings.midday));
+                if(!(k===tk&&S.reviews[tk]&&S.reviews[tk].saved))add(3000+i,'مراجعة اليوم 🌙',NIGHT[di%NIGHT.length],atTime(k,S.settings.night));
+              }
+              if(list.length)await L.schedule({notifications:list});
+              notifStatus='تم ضبط '+list.length+' تنبيه للـ٣٠ يوم الجاية (بيتجدّد تلقائيًا كل ما تفتح التطبيق).';
+              return true;
+            }catch(e){notifStatus='حصلت مشكلة في ضبط التنبيهات: '+(e&&e.message||e);return false}
+          }
+          async function testNotif(){
+            var L=LN();if(!L){toast('الاختبار بيشتغل داخل التطبيق المثبّت فقط');return}
+            try{
+              var p=await L.checkPermissions();if(p.display!=='granted')p=await L.requestPermissions();
+              if(p.display!=='granted'){toast('فعّل صلاحية الإشعارات الأول');return}
+              try{await L.createChannel({id:'rafeeq',name:'تنبيهات رفيق',importance:4,visibility:1,vibration:true})}catch(e){}
+              await L.schedule({notifications:[{id:9999,title:'رفيق',body:'ده تنبيه تجريبي. لو وصلك يبقى كل حاجة تمام ✅',channelId:'rafeeq',schedule:{at:new Date(Date.now()+6000),allowWhileIdle:true}}]});
+              toast('هيوصلك تنبيه بعد ٦ ثواني. اخرج من التطبيق وانتظر.');
+            }catch(e){toast('فشل الاختبار: '+(e&&e.message||e))}
+          }
+          async function exactSettings(){
+            var L=LN();if(!L){toast('متاح داخل التطبيق المثبّت فقط');return}
+            try{var r=await L.checkExactNotificationSetting();if(r.exact_alarm==='granted'){toast('دقة التنبيه شغّالة بالفعل ✅');return}await L.changeExactNotificationSetting()}catch(e){toast('مش متاح على جهازك')}
+          }
+
+          /* ---------- ملخص للمساعد (اختياري) ---------- */
+          function summary(){
+            var d=today(),gs=S.goals[d]||[];
+            var s='أهداف اليوم: '+(gs.length?gs.map(function(g){return (g.done?'✓ ':'○ ')+g.text}).join('، '):'لا يوجد');
+            if(S.habits.length)s+='\nعادات أحاول تركها: '+S.habits.map(function(h){return h.name+' ('+streak(h)+' يوم من غير زلّة)'}).join('، ');
+            return s;
+          }
+
+          /* ---------- العادات ---------- */
+          function streak(h){var last=(h.slips||[]).reduce(function(m,s){return s.d>m?s.d:m},h.created);return Math.max(0,diffDays(last,today()))}
+          function addGoal(text){text=(text||'').trim();if(!text)return false;var d=today();(S.goals[d]=S.goals[d]||[]).push({id:uid(),text:text,done:false});save();return true}
+
+          /* ---------- الشاشات ---------- */
+          function vToday(){
+            var d=today(),gs=S.goals[d]||[],done=gs.filter(function(g){return g.done}).length,pct=gs.length?Math.round(done/gs.length*100):0;
+            var pk=dk(addDays(new Date(),-1)),pr=S.reviews[pk],h='';
+            h+='<h1>رفيق</h1><div class="sub">'+esc(fmtDate(d))+'</div>';
+            h+='<div class="card msg"><div class="lbl">رسالة الصباح</div><p>'+esc(MORN[dayIndex(d)%MORN.length])+'</p></div>';
+            if(pr&&pr.plan&&pr.plan.trim()&&!pr.planAdded){h+='<div class="card"><div class="lbl">خطتك اللي كتبتها امبارح لليوم</div><p style="white-space:pre-wrap">'+esc(pr.plan)+'</p><div class="btns"><button class="btn sec sm" data-act="planadd">ضيفها كأهداف</button></div></div>'}
+            h+='<h2>أهداف النهارده'+(gs.length?' ('+done+'/'+gs.length+')':'')+'</h2><div class="card">';
+            if(gs.length){h+='<div class="bar"><i style="width:'+pct+'%"></i></div>'}
+            if(!gs.length)h+='<p class="small">ابدأ بهدف واحد صغير تقدر تخلّصه النهارده.</p>';
+            gs.forEach(function(g){h+='<div class="goal'+(g.done?' done':'')+'"><button class="chk'+(g.done?' on':'')+'" data-act="tog" data-id="'+g.id+'" aria-label="تم">'+(g.done?'✓':'')+'</button><div class="t">'+esc(g.text)+'</div><button class="ic" data-act="gedit" data-id="'+g.id+'" aria-label="تعديل">✎</button><button class="ic" data-act="gdel" data-id="'+g.id+'" aria-label="حذف">🗑</button></div>'});
+            h+='<div class="row" style="margin-top:10px"><input id="newgoal" data-draft="newGoal" placeholder="اكتب هدف جديد" value="'+esc(draft.newGoal)+'"><button class="btn" data-act="gadd">إضافة</button></div></div>';
+            if(gs.length&&done===gs.length)h+='<div class="card warm">ما شاء الله، خلّصت كل أهداف اليوم. الحمد لله على التوفيق 🤍</div>';
+            return h;
+          }
+          function vNight(){
+            var d=today();
+            if(!draft.rev||draft.revDate!==d){draft.rev=Object.assign({achieved:'',short:'',reason:'',plan:''},S.reviews[d]||{});draft.revDate=d}
+            var saved=S.reviews[d]&&S.reviews[d].saved,gs=S.goals[d]||[],done=gs.filter(function(g){return g.done}).length;
+            var QS=[['achieved','إيه اللي أنجزته النهارده؟','achfill'],['short','قصّرت في إيه؟','shfill'],['reason','إيه السبب؟ (بصراحة ومن غير جلد للذات)',''],['plan','إيه خطتك لبكرة؟ (سطر لكل هدف)','']];
+            var h='<h1>مراجعة المساء</h1><div class="sub">'+esc(fmtDate(d))+(gs.length?' · أنجزت '+done+' من '+gs.length:'')+'</div>';
+            if(saved)h+='<div class="card msg"><div class="lbl">اتحفظت مراجعة النهارده ✓</div><p class="small">تقدر تعدّلها وتحفظها تاني.</p></div>';
+            QS.forEach(function(q){h+='<div class="card"><div class="lbl">'+esc(q[1])+'</div><textarea data-draft="rev:'+q[0]+'">'+esc(draft.rev[q[0]])+'</textarea>'+(q[2]?'<div class="btns"><button class="btn ghost sm" data-act="'+q[2]+'">'+(q[2]==='achfill'?'املأ من أهدافي المنجزة':'املأ من أهدافي غير المنجزة')+'</button></div>':'')+'</div>'});
+            h+='<div class="btns"><button class="btn" data-act="revsave">حفظ المراجعة</button></div>';
+            return h;
+          }
+          function dotsFor(h){var s=new Set((h.slips||[]).map(function(x){return x.d})),o=new Set(h.oks||[]),r='';for(var i=6;i>=0;i--){var k=dk(addDays(new Date(),-i));r+='<i class="'+(s.has(k)?'s':o.has(k)?'o':'')+'"></i>'}return r}
+          function vHabits(){
+            var h='<h1>المحاسبة</h1><div class="sub">حزم مع رحمة: بنسمّي الحاجة باسمها من غير جلد، وبنفكّر في الحل.</div>';
+            h+='<div class="card warm">باب التوبة مفتوح دايمًا. ﴿لَا تَقْنَطُوا مِن رَّحْمَةِ اللَّهِ﴾. المطلوب إنك ترجع كل مرة، مش إنك متقعش أبدًا.</div>';
+            var t=today();
+            S.habits.forEach(function(x){
+              var n=streak(x),okToday=(x.oks||[]).indexOf(t)>-1;
+              h+='<div class="card"><div class="hname">'+esc(x.name)+'</div><div class="dots">'+dotsFor(x)+'</div>';
+              h+='<div><span class="stat">'+(n===0?'بداية جديدة النهارده':n+' يوم من غير زلّة')+'</span> · <span class="small">'+((x.oks||[]).length)+' يوم نجاح مسجّل</span></div>';
+              if(x.plan)h+='<p class="small" style="white-space:pre-wrap">خطتي لو جاتني الرغبة: '+esc(x.plan)+'</p>';
+              var last=(x.slips||[]).slice(-1)[0];if(last&&last.trigger)h+='<p class="small">آخر محفّز سجّلته: '+esc(last.trigger)+'</p>';
+              h+='<div class="btns"><button class="btn sm" data-act="hok" data-id="'+x.id+'">'+(okToday?'تراجع عن نجاح اليوم':'نجحت النهارده ✅')+'</button><button class="btn sec sm" data-act="hslip" data-id="'+x.id+'">حصلت زلّة</button><button class="btn ghost sm" data-act="hplan" data-id="'+x.id+'">خطتي للرغبة</button><button class="btn ghost sm" data-act="hdel" data-id="'+x.id+'">حذف</button></div></div>';
+            });
+            if(!S.habits.length)h+='<div class="card"><p class="small">أضف عادة عايز تتركها (مثلًا: التأخر عن الصلاة، الإفراط في الموبايل، التدخين...).</p></div>';
+            h+='<h2>إضافة عادة</h2><div class="card"><div class="row"><input id="newhabit" placeholder="اسم العادة اللي عايز تتركها"><button class="btn" data-act="hadd">إضافة</button></div></div>';
+            return h;
+          }
+          function vChat(){
+            var h='<h1>رفيق</h1><div class="sub">مساعدك لفهم أسباب تكرار الأخطاء واقتراح حلول عملية.</div>';
+            if(!S.settings.aiUrl)h+='<div class="card warm">الشات لسه مش متفعّل. لما نخلّص الخطوة الخاصة بيه هنضيف رابط الخدمة من الإعدادات.</div>';
+            h+='<div class="chatbox"><div id="msgs">';
+            if(!S.chat.length)h+='<div class="bub a">أهلًا بيك. احكيلي اللي شاغلك بالمصري زي ما تحب، وأنا هساعدك تفهم السبب وتلاقي خطوة عملية. مش بحاسب ولا بحكم، وبفكّرك إن الرجوع دايمًا ممكن.</div>';
+            S.chat.forEach(function(m){h+='<div class="bub '+(m.r==='u'?'u':m.r==='s'?'s':'a')+'">'+esc(m.t)+'</div>'});
+            if(busy)h+='<div class="bub a">بكتب...</div>';
+            if(chatErr)h+='<div class="bub s">'+esc(chatErr)+'</div>';
+            h+='</div><div class="row" style="margin-top:8px"><textarea id="chatin" data-draft="chat" style="min-height:48px;height:48px" placeholder="اكتب رسالتك">'+esc(draft.chat)+'</textarea><button class="btn" data-act="send"'+(busy?' disabled':'')+'>إرسال</button></div>';
+            if(S.chat.length)h+='<div class="btns"><button class="btn ghost sm" data-act="chatclear">مسح المحادثة</button></div>';
+            h+='</div>';
+            return h;
+          }
+          function allDays(){var s={};Object.keys(S.goals).forEach(function(k){s[k]=1});Object.keys(S.reviews).forEach(function(k){s[k]=1});S.habits.forEach(function(x){(x.oks||[]).forEach(function(k){s[k]=1});(x.slips||[]).forEach(function(z){s[z.d]=1})});return Object.keys(s).sort().reverse()}
+          function vLog(){
+            var days=allDays(),tg=0,td=0,rv=0;
+            Object.keys(S.goals).forEach(function(k){S.goals[k].forEach(function(g){tg++;if(g.done)td++})});
+            Object.keys(S.reviews).forEach(function(k){if(S.reviews[k].saved)rv++});
+            var h='<h1>السجل</h1><div class="sub">كل ده محفوظ على موبايلك بس.</div>';
+            h+='<div class="card"><span class="stat">'+td+'</span> هدف منجز من '+tg+' · <span class="stat">'+rv+'</span> مراجعة مسائية</div>';
+            if(!days.length)h+='<div class="card"><p class="small">لسه مفيش سجل. أول ما تضيف أهداف أو تكتب مراجعة هتلاقيها هنا.</p></div>';
+            days.slice(0,60).forEach(function(k){
+              var gs=S.goals[k]||[],dn=gs.filter(function(g){return g.done}).length,r=S.reviews[k];
+              h+='<details><summary>'+esc(fmtDate(k))+(gs.length?' — '+dn+'/'+gs.length:'')+'</summary>';
+              if(gs.length)h+='<p>'+gs.map(function(g){return (g.done?'✓ ':'○ ')+esc(g.text)}).join('<br>')+'</p>';
+              if(r&&r.saved){[['achieved','أنجزت'],['short','قصّرت'],['reason','السبب'],['plan','خطة بكرة']].forEach(function(q){if(r[q[0]]&&r[q[0]].trim())h+='<p><b>'+q[1]+':</b> <span style="white-space:pre-wrap">'+esc(r[q[0]])+'</span></p>'})}
+              S.habits.forEach(function(x){
+                if((x.oks||[]).indexOf(k)>-1)h+='<p class="small">✅ '+esc(x.name)+': نجاح</p>';
+                (x.slips||[]).filter(function(z){return z.d===k}).forEach(function(z){h+='<p class="small">🔸 '+esc(x.name)+': زلّة'+(z.trigger?' — المحفّز: '+esc(z.trigger):'')+(z.step?' — خطوتي: '+esc(z.step):'')+'</p>'});
+              });
+              h+='</details>';
+            });
+            return h;
+          }
+          function vSet(){
+            var s=S.settings;
+            var h='<h1>الإعدادات</h1>';
+            h+='<h2>مواعيد التنبيهات</h2><div class="card">';
+            h+='<div class="field"><label>تذكير الصباح</label><input type="time" data-set="morning" value="'+esc(s.morning)+'"></div>';
+            h+='<div class="sw"><input type="checkbox" id="midon" data-set="middayOn"'+(s.middayOn?' checked':'')+'><label for="midon">تذكير خلال اليوم (اختياري)</label></div>';
+            h+='<div class="field"><label>موعد تذكير النهار</label><input type="time" data-set="midday" value="'+esc(s.midday)+'"></div>';
+            h+='<div class="field"><label>مراجعة الليل</label><input type="time" data-set="night" value="'+esc(s.night)+'"></div>';
+            h+='<p class="small">'+esc(notifStatus||'التغييرات بتتطبّق فورًا.')+'</p>';
+            h+='<div class="btns"><button class="btn sec sm" data-act="testn">تجربة تنبيه الآن</button><button class="btn ghost sm" data-act="exact">تحسين دقة المواعيد</button><button class="btn ghost sm" data-act="resched">إعادة ضبط التنبيهات</button></div>';
+            h+='<p class="small">لو التنبيهات اتأخرت أو ما وصلتش: من إعدادات الموبايل > التطبيقات > رفيق > البطارية، اختار «غير مقيّد»، وفعّل الإشعارات.</p></div>';
+            h+='<h2>الذكاء الاصطناعي والخصوصية</h2><div class="card">';
+            h+='<p class="small">بياناتك كلها محفوظة على موبايلك. اللي بيتبعت بره التطبيق هو نص رسائل الشات اللي بتكتبها بس، وبعد موافقتك.</p>';
+            h+='<div class="field"><label>رابط الخدمة (Worker)</label><input class="ltr" type="url" data-set="aiUrl" placeholder="https://..." value="'+esc(s.aiUrl)+'"></div>';
+            h+='<div class="field"><label>رمز الدخول للخدمة</label><input class="ltr" type="password" data-set="aiToken" value="'+esc(s.aiToken)+'"></div>';
+            h+='<div class="sw"><input type="checkbox" id="aicons" data-set="aiConsent"'+(s.aiConsent?' checked':'')+'><label for="aicons">أوافق على إرسال رسائل الشات للخدمة</label></div>';
+            h+='<div class="sw"><input type="checkbox" id="aisum" data-set="shareSummary"'+(s.shareSummary?' checked':'')+'><label for="aisum">أرسل ملخص (أهداف اليوم وأسماء العادات وأيامها) مع الرسالة. غير مفعّل افتراضيًا.</label></div></div>';
+            h+='<h2>بياناتي</h2><div class="card"><div class="btns"><button class="btn sec sm" data-act="export">عرض السجل كنص للنسخ</button><button class="btn danger sm" data-act="clearall">مسح كل بياناتي</button></div></div>';
+            return h;
+          }
+          var VIEWS={today:vToday,night:vNight,habits:vHabits,chat:vChat,log:vLog,set:vSet};
+          function render(){
+            $('#main').innerHTML=VIEWS[tab]();
+            $('#nav').innerHTML=TABS.map(function(t){return '<button class="'+(t[0]===tab?'on':'')+'" data-tab="'+t[0]+'"><b>'+t[2]+'</b>'+t[1]+'</button>'}).join('');
+            if(tab==='chat'){var l=$('#msgs');if(l)l.scrollTop=l.scrollHeight}
+          }
+
+          /* ---------- الشات ---------- */
+          function consentModal(after){
+            var m=modal('<h3>قبل ما نبعت أي حاجة</h3><p>رسائل الشات اللي بتكتبها هتتبعت لخدمة ذكاء اصطناعي عن طريق الرابط اللي إنت ضبطته، عشان ترد عليك. ملخص أهدافك وعاداتك مش هيتبعت إلا لو فعّلته من الإعدادات.</p><p class="small">مفيش حاجة تانية بتخرج من موبايلك. تقدر تسحب موافقتك في أي وقت من الإعدادات. الخدمات المجانية ليها حد يومي للاستخدام.</p><div class="btns"><button class="btn" id="mok">موافق</button><button class="btn ghost" id="mno">لا</button></div>');
+            m.querySelector('#mno').onclick=function(){m.remove()};
+            m.querySelector('#mok').onclick=function(){S.settings.aiConsent=true;save();m.remove();after()};
+          }
+          async function sendChat(){
+            var txt=(draft.chat||'').trim();if(!txt||busy)return;
+            if(!S.settings.aiUrl){toast('أضف رابط الخدمة من الإعدادات أولًا');return}
+            if(!S.settings.aiConsent){consentModal(sendChat);return}
+            S.chat.push({r:'u',t:txt,at:Date.now()});draft.chat='';chatErr='';busy=true;
+            if(/(انتحر|أنتحر|اقتل نفسي|أقتل نفسي|اموت نفسي|أموت نفسي|أؤذي نفسي|اؤذي نفسي|مش عايز اعيش|مش عايز أعيش|نفسي اموت|نفسي أموت)/.test(txt))S.chat.push({r:'s',t:SAFETY,at:Date.now()});
+            save();render();
+            var msgs=S.chat.filter(function(m){return m.r==='u'||m.r==='a'}).slice(-12).map(function(m){return {role:m.r==='u'?'user':'assistant',content:m.t}});
+            var body={messages:msgs};if(S.settings.shareSummary)body.summary=summary();
+            var ctl=new AbortController(),to=setTimeout(function(){ctl.abort()},45000);
+            try{
+              var res=await fetch(S.settings.aiUrl,{method:'POST',headers:{'Content-Type':'application/json','X-App-Token':S.settings.aiToken||''},body:JSON.stringify(body),signal:ctl.signal});
+              var j={};try{j=await res.json()}catch(e){}
+              if(res.ok&&j.reply){S.chat.push({r:'a',t:j.reply,at:Date.now()})}
+              else if(res.status===429){chatErr='وصلت للحد المجاني لليوم. جرّب تاني بكرة، ولحد وقتها كمّل بالأهداف والمراجعة.'}
+              else if(res.status===401||res.status===403){chatErr='رمز الدخول غلط أو ناقص. راجعه في الإعدادات.'}
+              else{chatErr=(j&&j.error)||('حصلت مشكلة في الخدمة ('+res.status+')')}
+            }catch(e){chatErr='مفيش اتصال بالإنترنت أو الخدمة مش بترد دلوقتي.'}
+            clearTimeout(to);busy=false;S.chat=S.chat.slice(-200);save();if(tab==='chat')render();
+          }
+
+          /* ---------- الأحداث ---------- */
+          document.addEventListener('click',function(e){
+            var tb=e.target.closest('[data-tab]');if(tb){tab=tb.getAttribute('data-tab');render();window.scrollTo(0,0);return}
+            var b=e.target.closest('[data-act]');if(!b)return;
+            var a=b.getAttribute('data-act'),id=b.getAttribute('data-id'),d=today();
+            var gs=S.goals[d]||[],g=gs.filter(function(x){return x.id===id})[0],hb=S.habits.filter(function(x){return x.id===id})[0];
+            if(a==='gadd'){if(addGoal(draft.newGoal)){draft.newGoal='';sched(false);render();var i=$('#newgoal');if(i)i.focus()}}
+            else if(a==='tog'&&g){g.done=!g.done;save();render()}
+            else if(a==='gedit'&&g){askText('تعديل الهدف',g.text,function(v){if(v){g.text=v;save();render()}})}
+            else if(a==='gdel'&&g){confirmBox('تحذف الهدف ده؟','حذف',function(){S.goals[d]=gs.filter(function(x){return x.id!==id});save();render()},true)}
+            else if(a==='planadd'){var pk=dk(addDays(new Date(),-1)),pr=S.reviews[pk];if(pr){pr.plan.split(/\n+/).forEach(function(l){addGoal(l.replace(/^[\s\-•*]+/,''))});pr.planAdded=true;save();render()}}
+            else if(a==='achfill'){draft.rev.achieved=gs.filter(function(x){return x.done}).map(function(x){return x.text}).join('\n');render()}
+            else if(a==='shfill'){draft.rev.short=gs.filter(function(x){return !x.done}).map(function(x){return x.text}).join('\n');render()}
+            else if(a==='revsave'){S.reviews[d]=Object.assign({},draft.rev,{saved:Date.now(),planAdded:(S.reviews[d]||{}).planAdded&&S.reviews[d].plan===draft.rev.plan});save();sched(false);toast(CLOSE[dayIndex(d)%CLOSE.length]);render()}
+            else if(a==='hadd'){var v=($('#newhabit').value||'').trim();if(v){S.habits.push({id:uid(),name:v,created:d,oks:[],slips:[],plan:''});save();render()}}
+            else if(a==='hok'&&hb){hb.oks=hb.oks||[];var ix=hb.oks.indexOf(d);if(ix>-1)hb.oks.splice(ix,1);else hb.oks.push(d);save();render();if(ix===-1)toast('ما شاء الله، ربنا يثبّتك 🤍')}
+            else if(a==='hplan'&&hb){askText('لو جاتني الرغبة هعمل إيه؟ (مثلًا: أقوم أتوضّى، أمشي ١٠ دقايق، أكلّم فلان)',hb.plan||'',function(v){hb.plan=v;save();render()})}
+            else if(a==='hdel'&&hb){confirmBox('تحذف العادة دي وكل سجلها؟','حذف',function(){S.habits=S.habits.filter(function(x){return x.id!==id});save();render()},true)}
+            else if(a==='hslip'&&hb){
+              var m=modal('<h3>حصلت زلّة؟ ولا يهمك</h3><p style="white-space:pre-wrap">'+esc(SLIP_COMFORT)+'</p><div class="field"><label>إيه اللي حصل قبلها؟ (مكان / وقت / شعور)</label><textarea id="sl1"></textarea></div><div class="field"><label>إيه خطوتك الصغيرة دلوقتي؟</label><textarea id="sl2"></textarea></div><div class="btns"><button class="btn" id="mok">سجّل وابدأ من جديد</button><button class="btn ghost" id="mno">إلغاء</button></div>');
+              m.querySelector('#mno').onclick=function(){m.remove()};
+              m.querySelector('#mok').onclick=function(){hb.slips=hb.slips||[];hb.slips.push({d:d,trigger:m.querySelector('#sl1').value.trim(),step:m.querySelector('#sl2').value.trim()});hb.oks=(hb.oks||[]).filter(function(x){return x!==d});save();m.remove();render();toast('اتسجّلت. ابدأ من جديد دلوقتي، وربنا يتقبّل منك 🤍')};
+            }
+            else if(a==='send'){sendChat()}
+            else if(a==='chatclear'){confirmBox('تمسح المحادثة؟','مسح',function(){S.chat=[];chatErr='';save();render()},true)}
+            else if(a==='testn'){testNotif()}
+            else if(a==='exact'){exactSettings()}
+            else if(a==='resched'){sched(true).then(function(){render()})}
+            else if(a==='export'){
+              var t=allDays().reverse().map(function(k){var o=fmtDate(k)+'\n';(S.goals[k]||[]).forEach(function(x){o+=(x.done?'✓ ':'○ ')+x.text+'\n'});var r=S.reviews[k];if(r&&r.saved)o+='أنجزت: '+r.achieved+'\nقصّرت: '+r.short+'\nالسبب: '+r.reason+'\nخطة بكرة: '+r.plan+'\n';return o}).join('\n');
+              var mm=modal('<h3>سجلّي</h3><textarea id="ex" readonly style="min-height:220px">'+esc(t||'لا يوجد سجل بعد')+'</textarea><div class="btns"><button class="btn" id="mok">نسخ</button><button class="btn ghost" id="mno">إغلاق</button></div>');
+              mm.querySelector('#mno').onclick=function(){mm.remove()};
+              mm.querySelector('#mok').onclick=function(){var ta=mm.querySelector('#ex');ta.select();try{(navigator.clipboard?navigator.clipboard.writeText(ta.value):Promise.reject()).then(function(){toast('اتنسخ')},function(){document.execCommand('copy');toast('اتنسخ')})}catch(x){try{document.execCommand('copy');toast('اتنسخ')}catch(y){}}};
+            }
+            else if(a==='clearall'){confirmBox('هيتمسح كل حاجة: الأهداف والمراجعات والعادات والمحادثات والإعدادات. مفيش رجوع.','امسح كل شيء',async function(){try{localStorage.removeItem(KEY)}catch(x){}S=merge(null);draft={rev:null,revDate:'',chat:'',newGoal:''};var L=LN();if(L){try{var p=await L.getPending();if(p.notifications&&p.notifications.length)await L.cancel({notifications:p.notifications.map(function(n){return {id:n.id}})})}catch(x){}}notifStatus='';render();toast('اتمسحت كل بياناتك')},true)}
+          });
+          document.addEventListener('input',function(e){
+            var t=e.target,dd=t.getAttribute&&t.getAttribute('data-draft');if(!dd)return;
+            if(dd==='chat')draft.chat=t.value;else if(dd==='newGoal')draft.newGoal=t.value;else if(dd.indexOf('rev:')===0&&draft.rev)draft.rev[dd.slice(4)]=t.value;
+          });
+          document.addEventListener('change',function(e){
+            var t=e.target,k=t.getAttribute&&t.getAttribute('data-set');if(!k)return;
+            S.settings[k]=t.type==='checkbox'?t.checked:t.value.trim();save();
+            if(k==='morning'||k==='midday'||k==='night'||k==='middayOn')sched(true).then(function(){if(tab==='set'&&!(document.activeElement&&/INPUT|TEXTAREA/.test(document.activeElement.tagName)))render()});
+          });
+          document.addEventListener('keydown',function(e){if(e.key==='Enter'&&e.target.id==='newgoal'){e.preventDefault();var b=document.querySelector('[data-act="gadd"]');if(b)b.click()}});
+          document.addEventListener('visibilitychange',function(){if(!document.hidden){var a=document.activeElement;if(!(a&&/INPUT|TEXTAREA/.test(a.tagName))&&!document.querySelector('.ov'))render();sched(false)}});
+
+          render();
+          sched(true).then(function(){if(tab==='set')render()});
+          })();
+          </script>
+          </body>
+          </html>
+          RAFEEQ_EOF
+          cat > package.json <<'RAFEEQ_EOF'
+          {
+            "name": "rafeeq",
+            "version": "1.0.0",
+            "private": true,
+            "description": "رفيق - تطبيق متابعة يومية",
+            "dependencies": {
+              "@capacitor/android": "^8.0.0",
+              "@capacitor/cli": "^8.0.0",
+              "@capacitor/core": "^8.0.0",
+              "@capacitor/local-notifications": "^8.0.0"
+            }
+          }
+          RAFEEQ_EOF
+          cat > capacitor.config.json <<'RAFEEQ_EOF'
+          {
+            "appId": "com.rafeeq.app",
+            "appName": "رفيق",
+            "webDir": "www",
+            "server": {
+              "androidScheme": "https"
+            }
+          }
+          RAFEEQ_EOF
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Add Android project
+        run: npx cap add android
+
+      - name: Add notification permissions
+        run: |
+          MANIFEST=android/app/src/main/AndroidManifest.xml
+          sed -i 's#<application#<uses-permission android:name="android.permission.POST_NOTIFICATIONS" />\n    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />\n    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" android:maxSdkVersion="32" />\n    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />\n    <application#' "$MANIFEST"
+          grep -n "uses-permission" "$MANIFEST"
+
+      - name: Sync
+        run: npx cap sync android
+
+      - name: Build debug APK
+        working-directory: android
+        run: ./gradlew assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: rafeeq-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
